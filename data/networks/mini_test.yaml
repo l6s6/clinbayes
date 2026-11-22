@@ -1,13 +1,36 @@
 nodes:
-  - name: pneumonie
-    states: [nein, ja]
+  - name: smoking
+    states: ["no", "yes"]
     parents: []
     cpt:
-      "": [0.95, 0.05]
+      "": [0.80, 0.20]
+
+  - name: pneumonia
+    states: ["no", "yes"]
+    parents: [smoking]
+    cpt:
+      "no":  [0.97, 0.03]
+      "yes": [0.90, 0.10]
+
+  - name: bronchitis
+    states: ["no", "yes"]
+    parents: [smoking]
+    cpt:
+      "no":  [0.92, 0.08]
+      "yes": [0.70, 0.30]
 
   - name: crp
-    states: [normal, leicht_erhoeht, stark_erhoeht]
-    parents: [pneumonie]
+    states: [normal, mildly_elevated, strongly_elevated]
+    parents: [pneumonia]
     cpt:
-      "nein": [0.85, 0.12, 0.03]
-      "ja":   [0.05, 0.25, 0.70]
+      "no":  [0.85, 0.12, 0.03]
+      "yes": [0.05, 0.25, 0.70]
+
+  - name: dyspnea
+    states: ["no", "yes"]
+    parents: [pneumonia, bronchitis]
+    cpt:
+      "no, no":   [0.95, 0.05]
+      "no, yes":  [0.45, 0.55]
+      "yes, no":  [0.30, 0.70]
+      "yes, yes": [0.10, 0.90]
