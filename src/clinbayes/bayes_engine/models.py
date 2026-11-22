@@ -49,20 +49,19 @@ class CPT:
 
 
 @dataclass(frozen=True)
-class BayesNetwork:
+class BayesianNetwork:
     variables: dict[str, Variable]
     cpts: dict[str, CPT]
 
-    def dfs_util(self, u, color):
+    def _dfs_util(self, u, color) -> bool:
         gray = 1
         black = 2
-
         color[u] = gray
 
         for parent in self.variables[u].parents:
             if color[parent] == gray:  # Back edge found
                 return True
-            if color[parent] == 0 and self.dfs_util(parent, color):  # Visit unvisited node
+            if color[parent] == 0 and self._dfs_util(parent, color):  # Visit unvisited node
                 return True
 
         color[u] = black
@@ -73,13 +72,17 @@ class BayesNetwork:
 
         for name in self.variables:
             if color[name] == 0:
-                if self.dfs_util(name, color):
+                if self._dfs_util(name, color):
                     return True
         return False
 
     def __post_init__(self) -> None:
         if set(self.variables.keys()) != set(self.cpts.keys()):
             raise ValueError(f"Variable set does not match CPT variable set")
+
+        for name, variable in self.variables.items():
+            if name != variable.name:
+                raise ValueError(f"Variable name does not match its dict name: {variable.name} != {name}")
 
         for variable in self.variables.values():
             for parent in variable.parents:
