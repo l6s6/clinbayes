@@ -12,14 +12,18 @@ class Variable:
     parents: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.name:
+        if not isinstance(self.name, str) or not self.name:
             raise ValueError("Variable name is missing")
         if self.name in self.parents:
             raise ValueError(f"Variable '{self.name}' cannot have itself as parent")
         if len(self.states) < 1:
             raise ValueError(f"Variable '{self.name}' must have at least 1 state")
+        if any(not isinstance(state, str) for state in self.states):
+            raise ValueError(f"Variable '{self.name}' has invalid state; every state must be a string")
         if len(set(self.states)) != len(self.states):
             raise ValueError(f"Variable '{self.name}' has duplicate states: {self.states}")
+        if any(not isinstance(parent, str) for parent in self.parents):
+            raise ValueError(f"Variable '{self.name}' has invalid parent; every parent must be a string")
         if len(set(self.parents)) != len(self.parents):
             raise ValueError(f"Variable '{self.name}' has duplicate parents: {self.parents}")
 
@@ -34,6 +38,15 @@ class CPT:
             raise ValueError(f"CPT for '{self.variable.name}' is empty")
 
         for parent_values, row in self.table.items():
+            if not isinstance(parent_values, tuple):
+                raise ValueError(
+                    f"CPT for '{self.variable.name}': parent key {parent_values} must be a tuple"
+                )
+            if not isinstance(row, (tuple, list)):
+                raise ValueError(
+                    f"CPT for '{self.variable.name}' at key {parent_values}: "
+                    f"row must be a tuple or list"
+                )
             if len(row) != len(self.variable.states):
                 raise ValueError(
                     f"CPT for '{self.variable.name}' at key {parent_values}: "
@@ -47,6 +60,11 @@ class CPT:
                 )
 
             for item in row:
+                if isinstance(item, bool) or not isinstance(item, (int, float)):
+                    raise ValueError(
+                        f"CPT for '{self.variable.name}' at key {parent_values}: "
+                        f"probability must be a number, got {item}"
+                    )
                 if not (0.0 <= item <= 1.0):
                     raise ValueError(
                         f"CPT for '{self.variable.name}' at key {parent_values}: "
@@ -112,8 +130,8 @@ class BayesianNetwork:
             expected_keys = set(itertools.product(*(self.variables[p].states for p in parents)))
             actual_keys = set(cpt.table.keys())
             if actual_keys != expected_keys:
-                missing = sorted(expected_keys - actual_keys)
-                extra = sorted(actual_keys - expected_keys)
+                missing = sorted(expected_keys - actual_keys, key=repr)
+                extra = sorted(actual_keys - expected_keys, key=repr)
                 raise ValueError(
                     f"CPT for '{name}' does not match parent states (missing={missing}, extra={extra})"
                 )

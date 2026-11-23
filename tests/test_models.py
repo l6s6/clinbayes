@@ -56,6 +56,16 @@ def test_variable_parent_duplicate_raises() -> None:
         Variable(name="a", states=DEFAULT_STATES, parents=(var.name, var.name))
 
 
+def test_variable_invalid_state_type_raises() -> None:
+    with pytest.raises(ValueError, match="invalid state"):
+        Variable(name="a", states=("yes", 1), parents=())
+
+
+def test_variable_invalid_parent_type_raises() -> None:
+    with pytest.raises(ValueError, match="invalid parent"):
+        Variable(name="a", states=DEFAULT_STATES, parents=(1,))
+
+
 # --- CPT ---
 
 
@@ -93,6 +103,12 @@ def test_cpt_table_invalid_row_count_raises() -> None:
     var = _get_variable()
     with pytest.raises(ValueError, match="row has invalid length"):
         CPT(variable=var, table={(): (0.21, 0.7, 0.1)})
+
+
+def test_cpt_invalid_probability_type_raises() -> None:
+    var = _get_variable()
+    with pytest.raises(ValueError, match="probability must be a number"):
+        CPT(variable=var, table={(): ("0.95", 0.05)})
 
 
 # --- BayesianNetwork ---
@@ -185,4 +201,3 @@ def test_network_big_cycle_raises() -> None:
                 var_c.name: _dummy_binary_cpt(var_c),
             },
         )
-

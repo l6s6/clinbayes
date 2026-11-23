@@ -36,6 +36,12 @@ def test_load_empty_yaml_raises(tmp_path: Path) -> None:
         load_network(yaml_file)
 
 
+def test_load_malformed_yaml_raises(tmp_path: Path) -> None:
+    yaml_file = _write_yaml(tmp_path, "nodes: [")
+    with pytest.raises(ValueError, match="Invalid network YAML in"):
+        load_network(yaml_file)
+
+
 def test_load_duplicate_variable_raises(tmp_path: Path) -> None:
     yaml_file = _write_yaml(
         tmp_path,
@@ -174,6 +180,39 @@ def test_parse_cpt_invalid_prob_raises(tmp_path: Path) -> None:
         load_network(yaml_file)
 
 
+def test_parse_variable_invalid_parent_element_raises(tmp_path: Path) -> None:
+    yaml_file = _write_yaml(
+        tmp_path,
+        """
+        nodes:
+          - name: A
+            states: ["yes", "no"]
+            parents: [1]
+            cpt:
+              "": [0.3, 0.7]
+        """,
+    )
+    with pytest.raises(ValueError, match="every parent must be a string"):
+        load_network(yaml_file)
+
+
+def test_parse_duplicate_normalized_condition_raises(tmp_path: Path) -> None:
+    yaml_file = _write_yaml(
+        tmp_path,
+        """
+        nodes:
+          - name: A
+            states: ["yes", "no"]
+            parents: []
+            cpt:
+              "": [0.3, 0.7]
+              " ": [0.4, 0.6]
+        """,
+    )
+    with pytest.raises(ValueError, match="duplicate condition key"):
+        load_network(yaml_file)
+
+
 # --- Integration ---
 
 
@@ -186,4 +225,3 @@ def test_load_mini_test_network() -> None:
     assert net.variables["crp"].states == ("normal", "mildly_elevated", "strongly_elevated")
     assert net.variables["dyspnea"].parents == ("pneumonia", "bronchitis")
     assert net.cpts["dyspnea"].table[("yes", "no")] == (0.30, 0.70)
-
